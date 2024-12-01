@@ -7,16 +7,18 @@ import (
 	"net/http"
 	"os"
 
+	"snippetbox.local/internal/models"
+
 	_ "github.com/go-sql-driver/mysql"
 )
 
 type application struct {
-	logger *slog.Logger
+	logger   *slog.Logger
+	snippets *models.SnippetModel
 }
 
 func main() {
 	addr := flag.String("addr", ":4000", "HTTP network address")
-
 	dsn := flag.String("dsn", "web:pass@/snippetbox?parseTime=true", "MySQL data source name")
 	flag.Parse()
 
@@ -27,13 +29,13 @@ func main() {
 		logger.Error(err.Error())
 		os.Exit(1)
 	}
-
-	// We also defer a call to db.Close(), so that the connection pool is closed
-	// before the main() function exits.
 	defer db.Close()
 
+	// Initialize a models.SnippetModel instance containing the connection pool
+	// and add it to the application dependencies.
 	app := &application{
-		logger: logger,
+		logger:   logger,
+		snippets: &models.SnippetModel{DB: db},
 	}
 
 	logger.Info("starting server", "addr", *addr)
